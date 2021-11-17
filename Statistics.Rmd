@@ -6,12 +6,13 @@ output: html_document
 The key idea of this notebook is to describe key statistical methods and practices, which are needed for the work of a data analyst. There is always no limit to studying, so this material can be updated.
 
 ## Preparation work
+
 First of all, we need to install the needed packages and prepare our environment (load the libraries).
 
 ```{r message=FALSE, warning=FALSE, error=FALSE, echo}
 install.packages('tidyverse', repos = "http://cran.us.r-project.org") #key package for data analysis
 library(tidyverse)
-library(ggplot2)
+library(lubridate) #for the date format
 
 install.packages('DiagrammeR', repos = "http://cran.us.r-project.org") #package for creating graph diagrams
 library(DiagrammeR) 
@@ -21,12 +22,17 @@ library(pwr)
 
 install.packages('pivottabler', repos = "http://cran.us.r-project.org") #package for creating pivot-tables
 library(pivottabler)
+
+install.packages('skimr', repos = "http://cran.us.r-project.org") #package for providing the summary statistics of df
+library(skimr)
 ```
 
 ## Why do I need to know statistics?
+
 Definitely, why should I use methods to prove the difference or declare the correlation? Can I only compare figures mathematically to make my decision? The answer lays in the essence of sampling. To analyze the statistical population is always the most precise way to draw conclusions. But it's almost always very expensive, time-consuming, or even impossible. That's why analysts use samples, it's cheaper and easier. But the sample isn't the whole population and there can be a difference compared to the "real" figures. Evaluating the difference between "real" and "sampled" data is very important, cause only in this case we can tell with some high probability (normally 95% or 99%), what is in our data and which conclusions we can make. This difference between "real" and "sampled" data is called as **sampling error**.
 
 ### Confidence interval and confidence level
+
 When we want to evaluate an indicator, we take its average and calculate **standard error** ($SE = \frac{\sigma}{\sqrt{n}}$)and **margin error** ($\Delta = t * SE$ for Student's test). Then we can calculate our **confidence interval** (a range of possible values for our parameter) with the chosen **confidence level** (normally 95%). So, for example, the average meaning in our sample is 5, margin error is 1. It means, that our "real" average is between 4 (=5-1) and 6 (=5+1) with the chosen confidence level = 95%, and there is only 5%, that the "real" average lays outside of this interval.
 
 Let's try to calculate the confidence interval in R. You can do it manually, using the formulas above. Or you can go this way.
@@ -39,10 +45,12 @@ confint(disp.line.regression, level=0.95)
 
 Intercept in this case means the confidence interval for the data. So we can tell, that there is 95% probability, that our "real" average lays in the interval from 186.0 till 275.4.
 
-### Null hypothesis 
+### Null hypothesis
+
 Null hypothesis (H0) is one more important term to explain our topic further. If we want to prove something (correlation or significant difference), we do it normally denying the opposite case. And this opposite case is our null hypothesis. For example, we have 2 groups of people and some indicator for each person. Our main hypothesis is, that there is no significant difference in this indicator between these 2 groups. Our null hypothesis is, that there is no significant difference between these groups. The null hypothesis is the unlucky one because we always want to decline it.
 
 ### Sampling errors
+
 There are two types of sampling errors: Type I and Type II errors. They can be easily introduced in the table below. **Horizontally** we are telling, if there is a difference between two parameters **statistically**. And **vertically** we are telling, if there is a difference between two parameters **really**.
 
 |                                    | There [**IS**]{.ul} diff (stat) | There is [**NO**]{.ul} diff (stat) |
@@ -52,12 +60,11 @@ There are two types of sampling errors: Type I and Type II errors. They can be e
 
 Alpha is a rest from this equation: 100% - Confidence level. Normally it equals 5%. It means, that there is a 5% probability, that we are wrong to decline the null hypothesis. Or in other words, there is only a 5% probability, that we detected a significant difference, where there was no actual difference.
 
-Beta tells us about the opposite situation. It's the probability, that we stick to the null hypothesis, although there is an actual significant difference. Beta is directly connected to such term as a power of the test, it's calculated as 100% - Beta. Normally it's good if the power equals to or greater than 80%. Unfortunately, it's unreal to reduce type 1 and type 2 errors at the same time, because there is a negative correlation between them. 
+Beta tells us about the opposite situation. It's the probability, that we stick to the null hypothesis, although there is an actual significant difference. Beta is directly connected to such term as a power of the test, it's calculated as 100% - Beta. Normally it's good if the power equals to or greater than 80%. Unfortunately, it's unreal to reduce type 1 and type 2 errors at the same time, because there is a negative correlation between them.
 
 ## How to calculate the sample size
-Let's imagine the situation. We want to conduct AB-Testing and we want to catch a small difference between the 2 groups. It seems obvious, that the smaller the difference we want to be able to catch, the bigger should be the sample. This ability to catch our difference is the power of the test. So to calculate the sample size, we can fix alpha as 0.05 and power as 0.8. 
-Back to our example. Let's imagine, that we want to track some indicator, which normally has an average of 100 and has a standard deviation of 10. We hope, that our changes can improve our indicator to 101 (not too much, but maybe it's enough). So we can have an 80% probability, that we can catch this (1 Punkt) difference, keeping in mind, that we can catch it wrongly in 5%.
-Below is the code, how we can calculate the sample size.
+
+Let's imagine the situation. We want to conduct AB-Testing and we want to catch a small difference between the 2 groups. It seems obvious, that the smaller the difference we want to be able to catch, the bigger should be the sample. This ability to catch our difference is the power of the test. So to calculate the sample size, we can fix alpha as 0.05 and power as 0.8. Back to our example. Let's imagine, that we want to track some indicator, which normally has an average of 100 and has a standard deviation of 10. We hope, that our changes can improve our indicator to 101 (not too much, but maybe it's enough). So we can have an 80% probability, that we can catch this (1 Punkt) difference, keeping in mind, that we can catch it wrongly in 5%. Below is the code, how we can calculate the sample size.
 
 ```{r}
 mean_control = 100
@@ -73,11 +80,12 @@ pwr.t.test(d=effect, sig.level=0.05, power=0.80, type="two.sample", alternative=
 
 This result means, that we need to have at least 1238 users in each group.
 
-*Sometimes we don't know anything about our users and want to know something about them. In this case we can use the rule of thumb - to have at least 400 users in our sample. This figuare is calculated based on this formula: $n = \frac{p*q*t^2}{\Delta^2}$, where $\Delta$ = 0.05, p=0.5 (probability of our factor), q=1-p, t - Student's criteria (ca. 2).*
+*Sometimes we don't know anything about our users and want to know something about them. In this case we can use the rule of thumb - to have at least 400 users in our sample. This figuare is calculated based on this formula:* $n = \frac{p*q*t^2}{\Delta^2}$, where $\Delta$ = 0.05, p=0.5 (probability of our factor), q=1-p, t - Student's criteria (ca. 2).
 
 Ok, now we are ready to move to statistical methods
 
 ## Key schema of statistical methods
+
 Here is the basic algorithm, how to choose the statistical method. It's not so strict and sometimes you have to choose another option - e.g.bootstrap or another.
 
 ```{r echo=FALSE}
@@ -98,7 +106,7 @@ grViz("digraph {
   rec1_3  [label = 'Both qual and quant', shape = round]
   rec2_3  [label = 'Is there only 2 groups?', shape = oval] 
   rec3_3_1  [label = 'YES', shape = round]
-  rec4_3_1_1  [label = 'Is the data normally distributed or N is big?', shape = oval] 
+  rec4_3_1_1  [label = 'Is the sample mean normally distributed or N is big?', shape = oval] 
   rec5_3_1_1_1  [label = 'YES -> T-test', shape = round, color = red] 
   rec5_3_1_1_2  [label = 'NO -> Mann–Whitney U-test/Wilcoxon test', shape = round, color = red]  
   
@@ -124,8 +132,8 @@ grViz("digraph {
 ```
 
 ## How to test normality?
-Some statistical tests are very sensitive and it's needed to have normally distributed data to use them. Sometimes it's enough though, that data is close to the normal distribution. 
-The first method is visualizing the data with the density plot. It's always a good idea to visualize your data to see the tendency and evaluate tails and extremums.
+
+Some statistical tests are very sensitive and it's needed to have normally distributed data to use them. Sometimes it's enough though, that data is close to the normal distribution. The first method is visualizing the data with the density plot. It's always a good idea to visualize your data to see the tendency and evaluate tails and outliers.
 
 Let's evaluate our displacement (disp) data from the mtcars data set. To do it let's use ggplot.
 
@@ -141,20 +149,17 @@ qqnorm(mtcars$disp)
 qqline(mtcars$disp)
 ```
 
-And once again, our graphic shows us, that this distribution isn't normal.
-Now we can use the Shapiro-Wilk test to evaluate the normality
+And once again, our graphic shows us, that this distribution isn't normal. Now we can use the Shapiro-Wilk test to evaluate the normality
 
 ```{r}
 shapiro.test(mtcars$disp)
 ```
 
-We have a p-value < 0.05 and in this case, it's bad. Because our H0 is that there is NO difference between a normal distribution and our distribution. It means, that we can decline H0 and there IS this difference, so our distribution isn't normal.
-I recommend using not only the Shapiro-Wilk test but also visualizing data with the density plot. Now, let's move to statistical methods.
+We have a p-value \< 0.05 and in this case, it's bad. Because our H0 is that there is NO difference between a normal distribution and our distribution. It means, that we can decline H0 and there IS this difference, so our distribution isn't normal. I recommend using not only the Shapiro-Wilk test but also visualizing data with the density plot. Now, let's move to statistical methods.
 
 ## Pearson correlation and line regression
-We can use Pearson correlation if our data is quantitative and normally distributed. 
-Please keep in mind, that outliers can significantly change your results, that's why it's important to create a graphic of your data before the analysis. 
-Let's analyze mtcars dataset and find the correlation between miles/gallon and rear axle ratio. First of all, draw the scatterplot.
+
+We can use Pearson correlation if our data is quantitative and normally distributed. Please keep in mind, that outliers can significantly change your results, that's why it's important to create a graphic of your data before the analysis. Let's analyze mtcars dataset and find the correlation between miles/gallon and rear axle ratio. First of all, draw the scatterplot.
 
 ```{r echo=FALSE}
 ggplot(data=mtcars, mapping=aes(x=drat, y=mpg)) +
@@ -162,8 +167,7 @@ ggplot(data=mtcars, mapping=aes(x=drat, y=mpg)) +
   labs(title="Miles/(US) gallon vs Rear axle ratio", x= "Rear axle ratio", y="Miles/(US) gallon")
 ```
 
-As we can see from the chart, there is some correlation between two parametrs and this correlation could be liniar.
-Now let's test the normality.
+As we can see from the chart, there is some correlation between two parametrs and this correlation could be liniar. Now let's test the normality.
 
 ```{r}
 shapiro.test(mtcars$drat)
@@ -176,20 +180,14 @@ Both of our parameters are distributed normally, so we can use Pearson correlati
 cor(mtcars$drat, mtcars$mpg, method="pearson")
 ```
 
-The result equals 0.68. It means, that there is a correlation, but it's quite moderate. Let's create a linear model with these 2 factors.
-Please note, that if the connection between factors isn't linear, but can be somehow transformed (using logarithm, etc) to it. We can steel use these methods, but it can be tricky to understand the idea behind such a connection.
+The result equals 0.68. It means, that there is a correlation, but it's quite moderate. Let's create a linear model with these 2 factors. Please note, that if the connection between factors isn't linear, but can be somehow transformed (using logarithm, etc) to it. We can steel use these methods, but it can be tricky to understand the idea behind such a connection.
 
 ```{r}
 lr = lm(mpg~drat, data=mtcars)
 summary(lr)
 ```
 
-As we can see, this model isn't enough good. Why can we make such a conclusion? Let's go step by step.
-1) When assessing how well the model fits the data, you should look for symmetrical distribution across residuals on the mean value zero. Residuals aren't really small, but the median is close to zero and residuals are symmetric.
-2) P-value of our drat factor is good (cause it's pretty small), but for the intercept, it's not so good.
-3) R-squared is about 0.45-0.46, it's not enough to make a conclusion, that our model is good. Normally, the R-squared should be > 0.8 to conclude, that the model is good.
-4) F-statistic > 1 and it's good.
-As a result, we can say, that these 2 factors are definitely connected with each other, but it's not enough to use only the rear axle ratio to forecast miles/gallon. Let's create a plot with this linear regression and then we can think over, what we can do to make our model better.
+As we can see, this model isn't enough good. Why can we make such a conclusion? Let's go step by step. 1) When assessing how well the model fits the data, you should look for symmetrical distribution across residuals on the mean value zero. Residuals aren't really small, but the median is close to zero and residuals are symmetric. 2) P-value of our drat factor is good (cause it's pretty small), but for the intercept, it's not so good. 3) R-squared is about 0.45-0.46, it's not enough to make a conclusion, that our model is good. Normally, the R-squared should be \> 0.8 to conclude, that the model is good. 4) F-statistic \> 1 and it's good. As a result, we can say, that these 2 factors are definitely connected with each other, but it's not enough to use only the rear axle ratio to forecast miles/gallon. Let's create a plot with this linear regression and then we can think over, what we can do to make our model better.
 
 ```{r echo=FALSE message=FALSE}
 ggplot(data = mtcars, mapping=aes(y=mpg, x=drat)) +
@@ -218,18 +216,17 @@ lr = lm(mpg~cyl+disp+hp+wt, data=mtcars)
 summary(lr)
 ```
 
-Now our results look better. R-squared is a little bit higher, F-statistic is bigger and 2 p-values are significant.
-Wt is a good predictor, but how it's connected with the other. There is a strong correlation between wt and disp (even better as between wt and mpg) and wt and cyl. Let's remove them from our model.
+Now our results look better. R-squared is a little bit higher, F-statistic is bigger and 2 p-values are significant. Wt is a good predictor, but how it's connected with the other. There is a strong correlation between wt and disp (even better as between wt and mpg) and wt and cyl. Let's remove them from our model.
 
 ```{r}
 lr = lm(mpg~hp+wt, data=mtcars)
 summary(lr)
 ```
 
-Now we have a good result. Although R-squared is a little bit lower, as in the previous model, F-statistic is bigger and all of the coefficients are significant. I would recommend this model to predict. 
-Important note! More isn't always better. **If you use strong-correlated factors as predictors for your model it can screw the final result. It's always a good idea to look at the correlation matrix, run your lm function a set of times with different predictors to decide, which factors are better for the final model.**
+Now we have a good result. Although R-squared is a little bit lower, as in the previous model, F-statistic is bigger and all of the coefficients are significant. I would recommend this model to predict. Important note! More isn't always better. **If you use strong-correlated factors as predictors for your model it can screw the final result. It's always a good idea to look at the correlation matrix, run your lm function a set of times with different predictors to decide, which factors are better for the final model.**
 
 ## Spearman/Kendall correlation
+
 Both Spearman and Kendall correlation coefficients are ranked. It means, that they compare not the real figures, but their ranks (like places in the score-table). They aren't so demanding as the Pearson coefficient, that's why we can use them if we have not so clear data or initial data is ranked. To show, how they work, we can take our previous dataset and correlation between disp and mpg. Disp isn't distributed normally.
 
 ```{r}
@@ -237,12 +234,11 @@ cor(mtcars$disp, mtcars$mpg, method = "spearman")
 cor(mtcars$disp, mtcars$mpg, method = "kendall")
 ```
 
-The results are different, but both show a strong correlation between factors. Please note, that it's a common pattern, that the Spearman coefficient is higher than Kendall's. It's normal and it comes from the different calculation methods.
-So, we've finished the first part of our scheme, which describes methods for 2 quantitative variables. Let's move further and explore the next branch - 2 quantitative variables.
+The results are different, but both show a strong correlation between factors. Please note, that it's a common pattern, that the Spearman coefficient is higher than Kendall's. It's normal and it comes from the different calculation methods. So, we've finished the first part of our scheme, which describes methods for 2 quantitative variables. Let's move further and explore the next branch - 2 quantitative variables.
 
-##Chi-square test
-The Chi-square test is used to show the correlation between categorical data such as gender/group etc.
-There is a good dataset for such an aim - the Titanic dataset. There are 2201 observations, so it's more than enough for our analysis. Please keep in mind, that this test works well if there are at least 5 observations in each cell. Let's check, if gender, age, or class was a factor for survival. Firstly, we need to create a contingency table of the two variables, so we need 3 tables.
+## Chi-square test
+
+The Chi-square test is used to show the correlation between categorical data such as gender/group etc. There is a good dataset for such an aim - the Titanic dataset. There are 2201 observations, so it's more than enough for our analysis. Please keep in mind, that this test works well if there are at least 5 observations in each cell. Let's check, if gender, age, or class was a factor for survival. Firstly, we need to create a contingency table of the two variables, so we need 3 tables.
 
 ```{r}
 class_surv <- apply(Titanic, c(1, 4), sum)  
@@ -270,10 +266,11 @@ round(gender$residuals, 0)
 round(age$residuals, 0)
 ```
 
-The results are the following: if you were a female or a passenger of the first class, then you would have a higher probability to survive. 
+The results are the following: if you were a female or a passenger of the first class, then you would have a higher probability to survive.
 
 ## Fisher exact test
-The Fisher exact test allows us to analyze contingency tables, if there are not enough observations in each group (<5). Let's work with the data frame esoph and try to find out if there is a correlation between age and tobacco consumption among these patients (e.g. they are starting to smoke more, as they are getting older). Firstly we need to create a contingency table with the help of PivotTable.
+
+The Fisher exact test allows us to analyze contingency tables, if there are not enough observations in each group (\<5). Let's work with the data frame esoph and try to find out if there is a correlation between age and tobacco consumption among these patients (e.g. they are starting to smoke more, as they are getting older). Firstly we need to create a contingency table with the help of PivotTable.
 
 ```{r}
 pt <- PivotTable$new()
@@ -286,7 +283,7 @@ age_tob <- pt$asDataMatrix()
 age_tob
 ```
 
-Pretty good, but now aren't able to use F-test for the whole matrix, cause it's quite big and figures aren't <5. To show this kind of analysis, let's cut our matrix and use only 2 age groups (25-34 and 35-44). Then we'll use F-test.
+Pretty good, but now aren't able to use F-test for the whole matrix, cause it's quite big and figures aren't \<5. To show this kind of analysis, let's cut our matrix and use only 2 age groups (25-34 and 35-44). Then we'll use F-test.
 
 ```{r}
 age_tob_cut <- age_tob[1:4, 1:2]
@@ -297,3 +294,61 @@ fisher.test(age_tob_cut)
 
 Like any other statistical test, if the p-value is less than the significance level(0.05), we can reject the null hypothesis (there is no correlation). Our p-value equals 1, so we can't say, that there is any correlation between age and tobacco consumption. This example isn't especially meaningful in terms of data (honestly, the H1 hypothesis is really weak), but it can illustrate, how F-test works and how we can read the results.
 
+## Student's t-test
+
+The t-test can be used to determine if the means of two sets of data are significantly different from each other. As it was mentioned previously, data should be distributed normally, or at least the sample size should be high. For this case let's use the Israel Covid19 DataSet from Kaggle. Our task is to find out if Covid is detected by women in Israel more often/rare than by men. In this case, we can use a statistical method, because we haven't tested the whole population of Israel and because our timeline is limited. For this exercise, we are using [corona_age_and_gender.csv](https://www.kaggle.com/yvtsanlevy/israel-coronavirus-dataset?select=corona_age_and_gender.csv) file as of 16/11/21. Now we have to import our data and prepare it for future analysis.
+
+```{r}
+#this link should be updated, if you use another directory for the initials file.
+covid <- read.csv("~/Develop/materials/corona_age_and_gender.csv") 
+
+skim_without_charts(covid) #providing key statistical summary
+
+covid$first_week_day <- dmy(covid$first_week_day) #changing the format
+covid$last_week_day <- dmy(covid$last_week_day) #changing the format
+
+head(covid)
+```
+
+Our data have no missing values, so we can transform it to the needed format.
+
+```{r message=FALSE}
+covid_new <- covid %>% 
+  select(-weekly_deceased) %>% 
+  pivot_wider(names_from = gender, values_from = c(weekly_tests_num, weekly_cases)) %>% 
+  group_by(first_week_day, last_week_day) %>% 
+  summarise(tested_men=sum(weekly_tests_num_Men), tested_women=sum(weekly_tests_num_Women),
+            cases_men=sum(weekly_cases_Men), cases_women=sum(weekly_cases_Women)) %>% 
+  mutate(cov_freq_percent_w=round(cases_women/tested_women*100, 2)) %>% 
+  mutate(cov_freq_percent_m=round(cases_men/tested_men*100, 2)) %>% 
+  select(-c(tested_men, tested_women, cases_men, cases_women)) %>% 
+  arrange(first_week_day)
+
+head(covid_new)
+```
+
+Now we want to decide if this data is good enough for the t-test. According to the wiki, the following assumptions should be met:
+
+1.  The means of the two populations being compared should follow normal distributions. Under weak assumptions, this follows in large samples from the central limit theorem, even when the distribution of observations in each group is non-normal.
+
+2.  The two populations being compared should have the same variance. If the sample sizes in the two groups being compared are equal, Student's original t-test is highly robust to the presence of unequal variances.
+
+Our sample sizes are equal and enough large to use the T-test. But to prove the assumptions we can use the bootstrap method and Q-Q-plot.
+
+### Bootstrap
+Bootstrapping is a method that estimates the sampling distribution by taking multiple samples with replacement from a single random sample. These repeated samples are called resamples.
+
+### QQ-Plot
+
+### T-test, results, visualization
+
+```{r}
+t.test(covid_new$cov_freq_percent_w, covid_new$cov_freq_percent_m)
+```
+
+
+## Mann--Whitney U-test/Wilcoxon test
+
+These tests are non-parametric analogs to the T-test. If our sample size isn't enough large or we are working with ranks, then we can use these tests.
+
+### Visualization
