@@ -9,7 +9,7 @@ The key idea of this notebook is to describe key statistical methods and practic
 
 First of all, we need to install the needed packages and prepare our environment (load the libraries).
 
-```{r message=FALSE, warning=FALSE, error=FALSE, echo}
+```{r message=FALSE, warning=FALSE, error=FALSE}
 install.packages('tidyverse', repos = "http://cran.us.r-project.org") #key package for data analysis
 library(tidyverse)
 library(lubridate) #for the date format
@@ -25,6 +25,9 @@ library(pivottabler)
 
 install.packages('skimr', repos = "http://cran.us.r-project.org") #package for providing the summary statistics of df
 library(skimr)
+
+install.packages('boot',repos = "http://cran.us.r-project.org") #package for bootstraping
+library(boot)
 ```
 
 ## Why do I need to know statistics?
@@ -80,7 +83,7 @@ pwr.t.test(d=effect, sig.level=0.05, power=0.80, type="two.sample", alternative=
 
 This result means, that we need to have at least 1238 users in each group.
 
-*Sometimes we don't know anything about our users and want to know something about them. In this case we can use the rule of thumb - to have at least 400 users in our sample. This figuare is calculated based on this formula:* $n = \frac{p*q*t^2}{\Delta^2}$, where $\Delta$ = 0.05, p=0.5 (probability of our factor), q=1-p, t - Student's criteria (ca. 2).
+*Sometimes we don't know anything about our users and want to know something about them. In this case we can use the rule of thumb - to have at least 400 users in our sample. This figure is calculated based on this formula:* $n = \frac{p*q*t^2}{\Delta^2}$, where $\Delta$ = 0.05, p=0.5 (probability of our factor), q=1-p, t - Student's criteria (ca. 2).
 
 Ok, now we are ready to move to statistical methods
 
@@ -189,7 +192,7 @@ summary(lr)
 
 As we can see, this model isn't enough good. Why can we make such a conclusion? Let's go step by step. 1) When assessing how well the model fits the data, you should look for symmetrical distribution across residuals on the mean value zero. Residuals aren't really small, but the median is close to zero and residuals are symmetric. 2) P-value of our drat factor is good (cause it's pretty small), but for the intercept, it's not so good. 3) R-squared is about 0.45-0.46, it's not enough to make a conclusion, that our model is good. Normally, the R-squared should be \> 0.8 to conclude, that the model is good. 4) F-statistic \> 1 and it's good. As a result, we can say, that these 2 factors are definitely connected with each other, but it's not enough to use only the rear axle ratio to forecast miles/gallon. Let's create a plot with this linear regression and then we can think over, what we can do to make our model better.
 
-```{r echo=FALSE message=FALSE}
+```{r message=FALSE}
 ggplot(data = mtcars, mapping=aes(y=mpg, x=drat)) +
   geom_point() +
   geom_smooth(method='lm')
@@ -325,20 +328,47 @@ covid_new <- covid %>%
   arrange(first_week_day)
 
 head(covid_new)
+
 ```
 
-Now we want to decide if this data is good enough for the t-test. According to the wiki, the following assumptions should be met:
+Now we want to decide if this data is good enough for the t-test. According to the wiki, the following assumption should be met:
 
-1.  The means of the two populations being compared should follow normal distributions. Under weak assumptions, this follows in large samples from the central limit theorem, even when the distribution of observations in each group is non-normal.
+The means of the two populations being compared should follow normal distributions. Under weak assumptions, this follows in large samples from the central limit theorem, even when the distribution of observations in each group is non-normal.
 
-2.  The two populations being compared should have the same variance. If the sample sizes in the two groups being compared are equal, Student's original t-test is highly robust to the presence of unequal variances.
-
-Our sample sizes are equal and enough large to use the T-test. But to prove the assumptions we can use the bootstrap method and Q-Q-plot.
+Our sample sizes are equal and enough large to use the T-test. But to prove the assumptions we can use the bootstrap method.
 
 ### Bootstrap
-Bootstrapping is a method that estimates the sampling distribution by taking multiple samples with replacement from a single random sample. These repeated samples are called resamples.
+Bootstrapping is a method that estimates the sampling distribution by taking multiple samples with replacement from a single random sample. These repeated samples are called resamples. Let's create 10 000 samples of cov_freq_percent_w variable and for each sample find the mean. Then evaluate the distribution of this mean.
 
-### QQ-Plot
+```{r}
+set.seed(1) #to reproduce results in the future to be at the same page.
+
+meanfunc_w <- function(data, i){
+  d <- data[i, ]
+  return(mean(d$cov_freq_percent_w)) 
+}
+  
+bootstrap_freq_w <- boot(covid_new,meanfunc_w,R=10000)
+
+plot(bootstrap_freq_w)
+```
+
+Perfect! Our mean is distributed normally. Then we continue this exercise with the same indicator for men.
+
+```{r}
+set.seed(1) #to reproduce results in the future to be at the same page.
+
+meanfunc_m <- function(data, i){
+  d <- data[i, ]
+  return(mean(d$cov_freq_percent_m)) 
+}
+  
+bootstrap_freq_m <- boot(covid_new,meanfunc_m,R=10000)
+
+plot(bootstrap_freq_m)
+```
+
+Also great! Now we can be sure, that means are distributed normally and we can use the T-test.
 
 ### T-test, results, visualization
 
@@ -346,9 +376,28 @@ Bootstrapping is a method that estimates the sampling distribution by taking mul
 t.test(covid_new$cov_freq_percent_w, covid_new$cov_freq_percent_m)
 ```
 
+Unfortunately, the p-value is more than 0.05, so we can't reject the Ho. There is no significant difference between men and women in terms of diagnosed Covid through tests ratio. What is also interesting, that means of our factors are the most popular values in bootstraps distributions of means.
+
+Sometimes it's also good to show our results as a boxplot. Boxplot shows five summary statistics: the minimum, the maximum, the median, and the first and third quartiles of the data. Sometimes, you might want to add other statistical summary values on the boxplot (like mean). If two boxes do not overlap with one another, say, box A is completely above or below box B, then there is a difference between the two groups.  Let's do the needed calculations and visualize it.
+
+```{r warning=FALSE}
+#preparing the data frame
+covid_new_long <- pivot_longer(covid_new, cols=3:4, values_to = "cov_freq", names_to = "gender")
+
+xlabs <- c("men", "women")
+
+ggplot(data = covid_new_long, mapping=aes(y=cov_freq, x=gender)) +
+  geom_boxplot() +
+  theme_classic() +
+  scale_x_discrete(labels= xlabs) +
+  stat_summary(fun="mean")
+```
+
+So we can see the same result, as it was by the T-test. There is no significant difference between these groups.
 
 ## Mann--Whitney U-test/Wilcoxon test
-
 These tests are non-parametric analogs to the T-test. If our sample size isn't enough large or we are working with ranks, then we can use these tests.
 
-### Visualization
+
+
+## AB Testing
