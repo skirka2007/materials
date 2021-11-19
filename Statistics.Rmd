@@ -1,6 +1,6 @@
 ---
 title: "R Notebook about statistic in the work of data analyst"
-output: html_document
+output: pdf_document
 ---
 
 The key idea of this notebook is to describe key statistical methods and practices, which are needed for the work of a data analyst. There is always no limit to studying, so this material can be updated.
@@ -9,7 +9,7 @@ The key idea of this notebook is to describe key statistical methods and practic
 
 First of all, we need to install the needed packages and prepare our environment (load the libraries).
 
-```{r message=FALSE, warning=FALSE, error=FALSE}
+```{r message=FALSE, warning=FALSE, error=FALSE, echo=FALSE}
 install.packages('tidyverse', repos = "http://cran.us.r-project.org") #key package for data analysis
 library(tidyverse)
 library(lubridate) #for the date format
@@ -396,8 +396,57 @@ ggplot(data = covid_new_long, mapping=aes(y=cov_freq, x=gender)) +
 So we can see the same result, as it was by the T-test. There is no significant difference between these groups.
 
 ## Mann--Whitney U-test/Wilcoxon test
-These tests are non-parametric analogs to the T-test. If our sample size isn't enough large or we are working with ranks, then we can use these tests.
+These tests are non-parametric analogs to the T-test. If our sample size isn't enough large or we are working with ranks, then we can use these tests. For this purpose, we can use data set frets. It contains only 25 observations, which isn't enough for the student test. Let's see, if there is a significant difference between head length and head breadth of brothers.
 
+```{r}
+wilcox.test(frets$l1,frets$l2, exact = FALSE)
+wilcox.test(frets$b1,frets$b2, exact = FALSE)
+```
 
+P-values in both cases are greater than 0.05, so there is no significant difference in the brother's head's dimensions. And in this case, we can also show it on the boxplot.
+
+```{r warning=FALSE, echo=FALSE}
+
+#If you prefer to see head length and breadth separately, just un-comment the code below
+
+#preparing the data frame
+# col_names <- c("l", "b")
+# br_1 <- select(frets, ends_with("1")) %>% setNames(col_names)
+# br_2 <- select(frets, ends_with("2")) %>% setNames(col_names)
+# frets_long <- bind_rows("1"=br_1, "2"=br_2, .id="bruder")
+# 
+# ggplot(data = frets_long, mapping=aes(y=l, x=bruder)) +
+#   geom_boxplot() +
+#   theme_classic() +
+#   stat_summary(fun="mean") +
+#   labs(title="Head length")
+# 
+# ggplot(data = frets_long, mapping=aes(y=b, x=bruder)) +
+#   geom_boxplot() +
+#   theme_classic() +
+#   stat_summary(fun="mean") +
+#   labs(title="Head breadth")
+
+frets_all <- pivot_longer(frets,everything(), names_to = "dim", values_to = "measurement")
+
+labs_br <- c("breadth 1'br", "breadth 2'br", "length 1'br", "length 2'br")
+ggplot(data = frets_all, mapping=aes(y=measurement, x=dim)) +
+  geom_boxplot() +
+  theme_classic() +
+  stat_summary(fun="mean") +
+  scale_x_discrete(labels= labs_br) +
+  labs(x="")
+```
+
+The same picture. Visually there is also no significant difference between these groups.
+
+## ANOVA
+Analysis of variance (ANOVA) is based on the analysis of variation among and between groups. To use this method, some requirements should be met:
+1.  independence of observations, 
+2.  the distributions of the residuals are normal,
+3.  equality of variances (homoscedasticity) — the variance of data in groups should be the same.
+**The important note about this method!** Just because it allows to compare a lot of groups and test a lot of hypotheses, there is such effect as **multiple comparisons problem**. In easy words, it means, that as more comparisons we are making, as higher is the probability of type I error. To handle such an issue, some corrections to the p-value should be done. There are some methods, the most popular are Bonferroni correction and Tukey's range test. The first one is too conservative and increases type II error, that's why it's not so popular in some areas of analysis. 
+
+## Kruskal–Wallis H test
 
 ## AB Testing
