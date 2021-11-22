@@ -1,6 +1,9 @@
 ---
 title: "R Notebook about statistic in the work of data analyst"
-output: pdf_document
+output:
+  html_document: default
+  pdf_document: default
+always_allow_html: yes
 ---
 
 The key idea of this notebook is to describe key statistical methods and practices, which are needed for the work of a data analyst. There is always no limit to studying, so this material can be updated.
@@ -9,25 +12,37 @@ The key idea of this notebook is to describe key statistical methods and practic
 
 First of all, we need to install the needed packages and prepare our environment (load the libraries).
 
-```{r message=FALSE, warning=FALSE, error=FALSE, echo=FALSE}
-install.packages('tidyverse', repos = "http://cran.us.r-project.org") #key package for data analysis
+```{r message=FALSE, warning=FALSE, error=FALSE, results='hide'}
+#key package for data analysis
+install.packages('tidyverse', repos = "http://cran.us.r-project.org") 
 library(tidyverse)
 library(lubridate) #for the date format
 
-install.packages('DiagrammeR', repos = "http://cran.us.r-project.org") #package for creating graph diagrams
+#package for creating and showing in pdf graph diagrams
+install.packages('DiagrammeR', repos = "http://cran.us.r-project.org") 
 library(DiagrammeR) 
+install.packages('webshot', repos = "http://cran.us.r-project.org")
+webshot::install_phantomjs()
 
-install.packages('pwr', repos = "http://cran.us.r-project.org") #package for statistical tests
+#package for statistical tests
+install.packages('pwr', repos = "http://cran.us.r-project.org") 
 library(pwr)
 
-install.packages('pivottabler', repos = "http://cran.us.r-project.org") #package for creating pivot-tables
+#package for creating pivot-tables
+install.packages('pivottabler', repos = "http://cran.us.r-project.org") 
 library(pivottabler)
 
-install.packages('skimr', repos = "http://cran.us.r-project.org") #package for providing the summary statistics of df
+#package for providing the summary statistics of df
+install.packages('skimr', repos = "http://cran.us.r-project.org") 
 library(skimr)
 
-install.packages('boot',repos = "http://cran.us.r-project.org") #package for bootstraping
+#package for bootstraping
+install.packages('boot',repos = "http://cran.us.r-project.org") 
 library(boot)
+
+#package for some statistical (Levene's test) analysis
+install.packages('car', repos = "http://cran.us.r-project.org") 
+library(car)
 ```
 
 ## Why do I need to know statistics?
@@ -41,7 +56,8 @@ When we want to evaluate an indicator, we take its average and calculate **stand
 Let's try to calculate the confidence interval in R. You can do it manually, using the formulas above. Or you can go this way.
 
 ```{r}
-# For this exercise we can use the pre-installed data set - mtcars. Let's calculate the confidence interval for the Displacement (disp)
+# For this exercise we can use the pre-installed data set - mtcars. 
+# Let's calculate the confidence interval for the Displacement (disp)
 disp.line.regression <- lm(disp ~ 1, data = mtcars)
 confint(disp.line.regression, level=0.95)
 ```
@@ -78,7 +94,8 @@ mean_test = 101
 effect = (mean_test - mean_control) / sd_control
 
 #calculating the sample
-pwr.t.test(d=effect, sig.level=0.05, power=0.80, type="two.sample", alternative="greater")
+pwr.t.test(d=effect, sig.level=0.05, power=0.80, type="two.sample", 
+           alternative="greater")
 ```
 
 This result means, that we need to have at least 1238 users in each group.
@@ -116,7 +133,7 @@ grViz("digraph {
   rec3_3_2  [label = 'NO', shape = round]
   rec4_3_2_1  [label = 'Is the quant data metric or rang?', shape = oval] 
   rec5_3_2_1_1  [label = 'METRIC -> ANOVA', shape = round, color = red] 
-  rec5_3_2_1_2  [label = 'RANG -> Kruskal–Wallis H test', shape = round, color = red] 
+  rec5_3_2_1_2  [label = 'RANG -> Kruskal–Wallis H test/Friedman test', shape = round, color = red] 
   
   # edge definitions with the node IDs
   rec0 -> rec1_1 -> rec2_1 -> rec3_1_1
@@ -131,7 +148,7 @@ grViz("digraph {
   rec2_3 -> rec3_3_2 -> rec4_3_2_1 -> rec5_3_2_1_1
   rec4_3_2_1 -> rec5_3_2_1_2
   }",
-  width = 1100)
+  width=1000)
 ```
 
 ## How to test normality?
@@ -167,10 +184,11 @@ We can use Pearson correlation if our data is quantitative and normally distribu
 ```{r echo=FALSE}
 ggplot(data=mtcars, mapping=aes(x=drat, y=mpg)) +
   geom_point() +
-  labs(title="Miles/(US) gallon vs Rear axle ratio", x= "Rear axle ratio", y="Miles/(US) gallon")
+  labs(title="Miles/(US) gallon vs Rear axle ratio", x= "Rear axle ratio", 
+       y="Miles/(US) gallon")
 ```
 
-As we can see from the chart, there is some correlation between two parametrs and this correlation could be liniar. Now let's test the normality.
+As we can see from the chart, there is some correlation between two parameters and this correlation could be linear. Now let's test the normality.
 
 ```{r}
 shapiro.test(mtcars$drat)
@@ -190,7 +208,15 @@ lr = lm(mpg~drat, data=mtcars)
 summary(lr)
 ```
 
-As we can see, this model isn't enough good. Why can we make such a conclusion? Let's go step by step. 1) When assessing how well the model fits the data, you should look for symmetrical distribution across residuals on the mean value zero. Residuals aren't really small, but the median is close to zero and residuals are symmetric. 2) P-value of our drat factor is good (cause it's pretty small), but for the intercept, it's not so good. 3) R-squared is about 0.45-0.46, it's not enough to make a conclusion, that our model is good. Normally, the R-squared should be \> 0.8 to conclude, that the model is good. 4) F-statistic \> 1 and it's good. As a result, we can say, that these 2 factors are definitely connected with each other, but it's not enough to use only the rear axle ratio to forecast miles/gallon. Let's create a plot with this linear regression and then we can think over, what we can do to make our model better.
+As we can see, this model isn't enough good. Why can we make such a conclusion? Let's go step by step.
+
+1.  When assessing how well the model fits the data, you should look for symmetrical distribution across residuals on the mean value zero. Residuals aren't really small, but the median is close to zero and residuals are symmetric.
+
+2.  P-value of our drat factor is good (cause it's pretty small), but for the intercept, it's not so good.
+
+3.  R-squared is about 0.45-0.46, it's not enough to make a conclusion, that our model is good. Normally, the R-squared should be \> 0.8 to conclude, that the model is good.
+
+4.  F-statistic \> 1 and it's good. As a result, we can say, that these 2 factors are definitely connected with each other, but it's not enough to use only the rear axle ratio to forecast miles/gallon. Let's create a plot with this linear regression and then we can think over, what we can do to make our model better.
 
 ```{r message=FALSE}
 ggplot(data = mtcars, mapping=aes(y=mpg, x=drat)) +
@@ -318,10 +344,13 @@ Our data have no missing values, so we can transform it to the needed format.
 ```{r message=FALSE}
 covid_new <- covid %>% 
   select(-weekly_deceased) %>% 
-  pivot_wider(names_from = gender, values_from = c(weekly_tests_num, weekly_cases)) %>% 
+  pivot_wider(names_from = gender, values_from = c(weekly_tests_num, 
+                                                   weekly_cases)) %>% 
   group_by(first_week_day, last_week_day) %>% 
-  summarise(tested_men=sum(weekly_tests_num_Men), tested_women=sum(weekly_tests_num_Women),
-            cases_men=sum(weekly_cases_Men), cases_women=sum(weekly_cases_Women)) %>% 
+  summarise(tested_men=sum(weekly_tests_num_Men), 
+            tested_women=sum(weekly_tests_num_Women),
+            cases_men=sum(weekly_cases_Men), 
+            cases_women=sum(weekly_cases_Women)) %>% 
   mutate(cov_freq_percent_w=round(cases_women/tested_women*100, 2)) %>% 
   mutate(cov_freq_percent_m=round(cases_men/tested_men*100, 2)) %>% 
   select(-c(tested_men, tested_women, cases_men, cases_women)) %>% 
@@ -338,6 +367,7 @@ The means of the two populations being compared should follow normal distributio
 Our sample sizes are equal and enough large to use the T-test. But to prove the assumptions we can use the bootstrap method.
 
 ### Bootstrap
+
 Bootstrapping is a method that estimates the sampling distribution by taking multiple samples with replacement from a single random sample. These repeated samples are called resamples. Let's create 10 000 samples of cov_freq_percent_w variable and for each sample find the mean. Then evaluate the distribution of this mean.
 
 ```{r}
@@ -378,11 +408,12 @@ t.test(covid_new$cov_freq_percent_w, covid_new$cov_freq_percent_m)
 
 Unfortunately, the p-value is more than 0.05, so we can't reject the Ho. There is no significant difference between men and women in terms of diagnosed Covid through tests ratio. What is also interesting, that means of our factors are the most popular values in bootstraps distributions of means.
 
-Sometimes it's also good to show our results as a boxplot. Boxplot shows five summary statistics: the minimum, the maximum, the median, and the first and third quartiles of the data. Sometimes, you might want to add other statistical summary values on the boxplot (like mean). If two boxes do not overlap with one another, say, box A is completely above or below box B, then there is a difference between the two groups.  Let's do the needed calculations and visualize it.
+Sometimes it's also good to show our results as a boxplot. Boxplot shows five summary statistics: the minimum, the maximum, the median, and the first and third quartiles of the data. Sometimes, you might want to add other statistical summary values on the boxplot (like mean). If two boxes do not overlap with one another, say, box A is completely above or below box B, then there is a difference between the two groups. Let's do the needed calculations and visualize it.
 
 ```{r warning=FALSE}
 #preparing the data frame
-covid_new_long <- pivot_longer(covid_new, cols=3:4, values_to = "cov_freq", names_to = "gender")
+covid_new_long <- pivot_longer(covid_new, cols=3:4, values_to = "cov_freq", 
+                               names_to = "gender")
 
 xlabs <- c("men", "women")
 
@@ -396,6 +427,7 @@ ggplot(data = covid_new_long, mapping=aes(y=cov_freq, x=gender)) +
 So we can see the same result, as it was by the T-test. There is no significant difference between these groups.
 
 ## Mann--Whitney U-test/Wilcoxon test
+
 These tests are non-parametric analogs to the T-test. If our sample size isn't enough large or we are working with ranks, then we can use these tests. For this purpose, we can use data set frets. It contains only 25 observations, which isn't enough for the student test. Let's see, if there is a significant difference between head length and head breadth of brothers.
 
 ```{r}
@@ -441,12 +473,87 @@ ggplot(data = frets_all, mapping=aes(y=measurement, x=dim)) +
 The same picture. Visually there is also no significant difference between these groups.
 
 ## ANOVA
-Analysis of variance (ANOVA) is based on the analysis of variation among and between groups. To use this method, some requirements should be met:
-1.  independence of observations, 
-2.  the distributions of the residuals are normal,
-3.  equality of variances (homoscedasticity) — the variance of data in groups should be the same.
-**The important note about this method!** Just because it allows to compare a lot of groups and test a lot of hypotheses, there is such effect as **multiple comparisons problem**. In easy words, it means, that as more comparisons we are making, as higher is the probability of type I error. To handle such an issue, some corrections to the p-value should be done. There are some methods, the most popular are Bonferroni correction and Tukey's range test. The first one is too conservative and increases type II error, that's why it's not so popular in some areas of analysis. 
 
-## Kruskal–Wallis H test
+Analysis of variance (ANOVA) is based on the analysis of variation among and between groups. To use ANOVA, the equality of variances (homoscedasticity) should be met.
 
-## AB Testing
+**The important note about this method!** Just because it allows to compare a lot of groups and test a lot of hypotheses, there is such effect as **multiple comparisons problem**. In easy words, it means, that as more comparisons we are making, as higher is the probability of type I error. To handle such an issue, some corrections to the p-value should be done. There are some methods, the most popular are Bonferroni correction and Tukey's range test. The first one is too conservative and increases type II error, that's why it's not so popular in some areas of analysis. There are different types of ANOVA, depending on the number of factors, independence of samples, and so on.
+
+The algorithm of the analysis is the following:
+
+1.  Levene's test to prove the homoscedasticity,
+
+2.  ANOVA (+ choosing the best model if applicable),
+
+3.  Tukey's HSD (if we find significant results)
+
+This time let's work with the PlantGrowth database.
+
+```{r}
+plant <- PlantGrowth
+
+plant_stat <- plant %>% 
+  group_by(group) %>% 
+  summarise(
+    number_observ = n(),
+    mean_value = mean(weight),
+    sd_value = sd(weight)
+  ) 
+
+plant_stat
+leveneTest(weight ~ group, data = plant)
+```
+
+P-value is 0.34, so it's bigger than 0.05. It means, that we can't decline H0 about homoscedasticity, so as with the Shapiro-Wilk test, it's a good sign for us.
+
+```{r}
+anova <- aov(weight ~ group, data = plant)
+summary(anova)
+```
+
+P-value is less than 0.05, so there is at least one significant difference between our groups. Let's check, where there is this difference.
+
+```{r}
+tukey_anova <- TukeyHSD(anova)
+tukey_anova
+plot(tukey_anova)
+```
+
+There is only one significant difference (p adj \< 0.05) - between trt2 and trt1. Visualization can also help us to notice this difference - the interval shouldn't include 0 - it also means, that there is a significant difference here.
+
+Finally, we can show our results as a box plot.
+
+```{r warning=FALSE}
+ggplot(data = plant, mapping=aes(y=weight, x=group, fill=group)) +
+  scale_fill_manual(values=c("grey", "blue", "blue")) +
+  geom_boxplot() +
+  stat_summary(fun="mean") 
+  
+```
+
+Sometimes if we have 2 or more factors, it can be useful to compare our models. For this case, we can use aictab function from the AICcmodavg library. The model with the lowest AIC score is the best fit for the data and AICcwt shows the percentage, which this model describes. We don't have another factor here, so we don't have to follow this step now.
+
+```{r eval=FALSE}
+install.packages('AICcmodavg', repos = "http://cran.us.r-project.org")
+library(AICcmodavg)
+aictab()
+```
+
+## Kruskal--Wallis H test and Friedman test
+
+To save time, let's use the same dataset, that we've used in the previous section. The Kruskal--Wallis H test should be used, if our observations are independent, but there is no homoscedasticity between the groups. To find out, where exactly is the difference we can use the Wilcoxon test, adjusted for the multiple comparisons.
+
+```{r}
+kruskal.test(weight ~ group, data = plant)
+pairwise.wilcox.test(plant$weight, plant$group,
+                 p.adjust.method = "BH")
+```
+
+According to these tests, there is a significant difference, cause the p-value in the first case is less than 0.05. And this difference is only between trt1 and trt2 groups, according to the p-value matrix in the second case. So we have the same results, as we had using the ANOVA method.
+
+The Friedman test is a non-parametric alternative to the one-way repeated measures ANOVA test (if our observations aren't independent). This test is used very rarely, so let's just briefly mention, what exactly should we do. The algorithm is the same, as for the H test. Firstly we need to run friedman.test(), then we can find out the effect size, using friedman_effsize() - if it's close to 1, the result is trustworthy. Then we can run pairwise.wilcox.test() to adjust p-values and find the differences.
+
+```{r eval=FALSE}
+friedman.test()
+friedman_effsize()
+pairwise.wilcox.test()
+```
